@@ -1,0 +1,16 @@
+[package]
+name = "test_generator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dirs = "6.0.0"
+eframe = "0.31.0"
+egui = "0.31.0"
+egui_extras = { version = "0.31.0", features = ["image"] }
+mlua = { version = "0.10.3", features = ["lua54", "vendored"] }
+open = "5.3.2"
+reqwest = { version = "0.12.12", features = ["blocking"] }
+rfd = "0.15.2"
+serde = { version = "1.0.217", fetures = ["derive"] }
+serde_json = "1.0.138"
