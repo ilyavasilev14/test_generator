@@ -1,5 +1,5 @@
 use egui::{Button, ScrollArea, TextEdit, Ui, Vec2};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use crate::{exercise::UnloadedExerciseData, exercise_list::text};
 
 pub struct ExerciseDownloadModal {
@@ -271,12 +271,12 @@ pub struct ExerciseListResponse {
     end_idx: Option<usize>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct CurrentExerciseResponse {
-    #[serde(rename(deserialize = "Name"))]
-    name: String,
-    #[serde(rename(deserialize = "Trusted"))]
-    trusted: bool,
-    #[serde(rename(deserialize = "LuaCode"))]
-    lua_code: String,
+    #[serde(rename(deserialize = "Name", serialize = "Name"))]
+    pub name: String,
+    #[serde(rename(deserialize = "Trusted", serialize = "Trusted"))]
+    pub trusted: bool,
+    #[serde(rename(deserialize = "LuaCode", serialize = "LuaCode"))]
+    pub lua_code: String,
 }

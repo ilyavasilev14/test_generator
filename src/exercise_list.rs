@@ -3,7 +3,7 @@ use std::{collections::HashMap, ffi::OsStr, fs};
 use egui::{Button, CentralPanel, Context, Label, Modal, RichText, ScrollArea, Vec2};
 use mlua::{Function, Lua, LuaOptions, ObjectLike, StdLib};
 
-use crate::{create_exercise::CreateExerciseData, custom_gui::GeneratorGUI, exercise::{exercises_count_string, AnswerState, ExerciseData, UnloadedExerciseData}, exercise_download::{show_exercise_download_modal, ExerciseDownloadModal}};
+use crate::{create_exercise::CreateExerciseData, custom_gui::GeneratorGUI, exercise::{add_lua_io_functions, exercises_count_string, AnswerState, ExerciseData, UnloadedExerciseData}, exercise_download::{show_exercise_download_modal, ExerciseDownloadModal}};
 
 pub fn text (text: impl Into<String>, font_size: f32) -> RichText {
     return RichText::new(text).size(font_size)
@@ -74,8 +74,8 @@ pub fn display_list(ctx: &Context, selected_now: &mut HashMap<String, usize>, ex
                             None => 0,
                         };
 
-                    for _ in 0..count {
-                        let lua_vm = Lua::new_with(StdLib::ALL_SAFE, LuaOptions::default()).expect("Failed to create a Lua VM!");
+                    for idx in 0..count {
+                        let mut lua_vm = Lua::new_with(StdLib::ALL_SAFE, LuaOptions::default()).expect("Failed to create a Lua VM!");
                         let chunk = lua_vm.load(&exercise_file.lua_code);
                         if let Err(err) = chunk.exec() {
                             println!("Lua code execution failed: {}", err);
@@ -107,6 +107,8 @@ pub fn display_list(ctx: &Context, selected_now: &mut HashMap<String, usize>, ex
                             }
                             Ok(())
                         });
+                        let _ = lua_vm.set_app_data(idx);
+                        add_lua_io_functions(&mut lua_vm);
 
                         exercises.push(ExerciseData {
                             lua_vm,
@@ -162,9 +164,9 @@ pub fn display_list(ctx: &Context, selected_now: &mut HashMap<String, usize>, ex
                 }
                 if ui.add_sized(size, new_button).clicked() {
                     let path = rfd::FileDialog::new()
-                        .set_file_name("exercise.lua")
-                        .add_filter("Lua", &[".lua"]).save_file();
+                        .set_file_name("exercise.lua").save_file();
                     if let Some(path) = path {
+                        let path = path.with_extension("lua");
                         *create_exercise_data =
                             crate::create_exercise::create_file(path.to_str().unwrap());
                     }

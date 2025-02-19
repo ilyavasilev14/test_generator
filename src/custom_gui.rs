@@ -31,13 +31,13 @@ pub enum WidgetState {
 #[derive(Default, Debug)]
 pub struct Container {
     pub container_type: ContainerType,
-    pub widgets: Vec<(WidgetType, WidgetState)>,
+    pub widgets: Vec<(WidgetType, Option<Function>)>,
     pub children: Vec<Container>,
 }
 
 impl Container {
     fn draw_container_widgets(&mut self, ui: &mut Ui) {
-        for (widget, state) in &mut self.widgets {
+        for (widget, on_click) in &mut self.widgets {
             match widget {
                 WidgetType::Button(text, font_size, size) => {
                     let text = RichText::new(text.to_string()).size(*font_size);
@@ -47,18 +47,20 @@ impl Container {
                         None => ui.button(text),
                     };
 
-                    match widget.clicked() {
-                        true => *state = WidgetState::Clicked,
-                        false => *state = WidgetState::None,
+                    if let Some(function) = on_click {
+                        if widget.clicked() {
+                            let _: Result<(), mlua::Error> = function.call(());
+                        }
                     }
                 },
                 WidgetType::Label(text, font_size) => {
                     let text = RichText::new(text.to_string()).size(*font_size);
                     let widget = ui.label(text);
 
-                    match widget.clicked() {
-                        true => *state = WidgetState::Clicked,
-                        false => *state = WidgetState::None,
+                    if let Some(function) = on_click {
+                        if widget.clicked() {
+                            let _: Result<(), mlua::Error> = function.call(());
+                        }
                     }
                 },
                 WidgetType::Image(path) => {
@@ -147,24 +149,24 @@ impl UserData for Container {
     fn add_fields<F: mlua::UserDataFields<Self>>(_: &mut F) {}
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
-        methods.add_method_mut("label", |_, ui, (text, font_size): (String, f32)| {
-            Ok(ui.widgets.push((WidgetType::Label(text, font_size), WidgetState::None)))
+        methods.add_method_mut("label", |_, ui, (text, font_size, on_click): (String, f32, Option<Function>)| {
+            Ok(ui.widgets.push((WidgetType::Label(text, font_size), on_click)))
         });
 
-        methods.add_method_mut("button", |_, ui, (text, font_size, size): (String, f32, Option<[f32; 2]>)| {
-            Ok(ui.widgets.push((WidgetType::Button(text, font_size, size), WidgetState::None)))
+        methods.add_method_mut("button", |_, ui, (text, font_size, size, on_click): (String, f32, Option<[f32; 2]>, Option<Function>)| {
+            Ok(ui.widgets.push((WidgetType::Button(text, font_size, size), on_click)))
         });
 
         methods.add_method_mut("image", |_, ui, image_path: String| {
-            Ok(ui.widgets.push((WidgetType::Image(image_path), WidgetState::None)))
+            Ok(ui.widgets.push((WidgetType::Image(image_path), None)))
         });
 
         methods.add_method_mut("separator", |_, ui, (): ()| {
-            Ok(ui.widgets.push((WidgetType::Separator, WidgetState::None)))
+            Ok(ui.widgets.push((WidgetType::Separator, None)))
         });
 
         methods.add_method_mut("add_space", |_, ui, space: f32| {
-            Ok(ui.widgets.push((WidgetType::Space(space), WidgetState::None)))
+            Ok(ui.widgets.push((WidgetType::Space(space), None)))
         });
 
         methods.add_method_mut("vertical", |lua, ui, gui_fn: Function| {
