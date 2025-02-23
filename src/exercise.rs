@@ -91,7 +91,7 @@ fn check_answer(exercise: &mut ExerciseData) {
         None => {
             exercise.answer_state = match exercise.lua_vm.globals().get::<Function>("check_exercise") {
                 Ok(function) => {
-                    match function.call::<bool>(()) {
+                    match function.call::<bool>(exercise.current_input.clone()) {
                         Ok(is_right) =>
                             match is_right {
                                 true => AnswerState::Correct,
@@ -147,12 +147,16 @@ pub fn add_lua_io_functions(lua: &mut Lua) {
                             let _ = thread::spawn(move || open::that(path.with_file_name("")));
                         }
                     },
-                    Err(err) => 
-                        println!("Failed to write to a file (new_file)! Err: {}", err),
+                    Err(err) => {
+                        println!("Failed to write to a file (new_file)! Err: {}", err);
+                        dbg!(path);
+                    },
                 }
             },
-            Err(err) => 
-                println!("Failed to create a file (new_file)! Err: {}", err),
+            Err(err) => {
+                println!("Failed to create a file (new_file)! Err: {}", err);
+                dbg!(path);
+            },
         };
         Ok(())
     }).expect("Failed to create a Lua function (new_file)!");
