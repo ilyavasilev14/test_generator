@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use config::{load_config, save_config, AppConfig};
 use create_exercise::CreateExerciseData;
 use eframe::App;
-use egui::{Button, CentralPanel, RichText, ScrollArea, Vec2};
+use egui::{Button, CentralPanel, RichText, ScrollArea, Style, Vec2, Visuals};
 use exercise::{display_exercise, exercises_count_string, AnswerState, ExerciseData};
 use exercise_download::ExerciseDownloadModal;
 
@@ -24,6 +24,10 @@ fn main() -> eframe::Result {
         "My egui App",
         options,
         Box::new(|cc| {
+            cc.egui_ctx.set_style(Style {
+                visuals: Visuals::light(),
+                ..Default::default()
+            });
             // This gives us image support:
             egui_extras::install_image_loaders(&cc.egui_ctx);
             return Ok(Box::new(TestBuilderApp::new()))
