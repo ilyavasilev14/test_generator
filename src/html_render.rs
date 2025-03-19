@@ -9,8 +9,8 @@ pub fn render(exercises: &Vec<ExerciseData>) {
         result += &render_exercise(idx, exercise);
     }
 
-    let file_path = dirs::document_dir()
-        .expect("Failed to get the document directory!");
+    let file_path = dirs::home_dir()
+        .expect("Failed to get the document (home) directory!");
     let _ = fs::create_dir_all(&file_path); // just in case
     let file_path = file_path.join("Вариант.html");
 
