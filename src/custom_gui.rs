@@ -22,12 +22,6 @@ pub enum WidgetType {
     Space(f32),
 }
 
-#[derive(Debug)]
-pub enum WidgetState {
-    None,
-    Clicked,
-}
-
 #[derive(Default, Debug)]
 pub struct Container {
     pub container_type: ContainerType,

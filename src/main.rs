@@ -4,7 +4,7 @@ use config::{load_config, save_config, AppConfig};
 use create_exercise::CreateExerciseData;
 use eframe::App;
 use egui::{Button, CentralPanel, RichText, ScrollArea, Style, Vec2, Visuals};
-use exercise::{display_exercise, exercises_count_string, AnswerState, ExerciseData};
+use exercise::{display_exercise, exercises_count_string, ExerciseData};
 use exercise_download::ExerciseDownloadModal;
 
 mod exercise;
@@ -36,7 +36,6 @@ fn main() -> eframe::Result {
 }
 
 struct TestBuilderApp {
-    session_statistics: Vec<AnswerState>,
     exercises_choice: HashMap<String, usize>,
     exercises: Vec<ExerciseData>,
     config: AppConfig,
@@ -50,7 +49,6 @@ impl TestBuilderApp {
         let config = load_config();
         TestBuilderApp {
             exercises: Vec::new(),
-            session_statistics: Vec::new(),
             exercises_choice: HashMap::new(),
             config,
             exercise_download_modal: ExerciseDownloadModal::default(),

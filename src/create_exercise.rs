@@ -41,7 +41,7 @@ end
 use std::{fs::{self, File}, io::Write, path::PathBuf, str::FromStr, thread, usize};
 use egui::{Button, CentralPanel, Context, Modal, SidePanel, Vec2};
 use mlua::{Function, Lua, LuaOptions, ObjectLike, StdLib};
-use reqwest::{blocking::{Body, Client, Request}, Method, Url};
+use reqwest::{blocking::Client, Url};
 use crate::{custom_gui::GeneratorGUI, exercise::{add_lua_io_functions, display_exercise, get_ex_path, AnswerState, ExerciseData}, exercise_download::CurrentExerciseResponse, exercise_list::text};
 
 pub struct CreateExerciseData {

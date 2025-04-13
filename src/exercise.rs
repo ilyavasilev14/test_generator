@@ -1,12 +1,9 @@
 use std::{fs::{self, File}, io::Write, path::PathBuf, process::Command, thread};
 
 use egui::{Button, RichText, TextEdit, Ui, Vec2};
-use mlua::{Function, Lua, ObjectLike};
+use mlua::{Function, Lua};
 use serde::{Deserialize, Serialize};
 use crate::{custom_gui::GeneratorGUI, exercise_list::text};
-
-pub static mut IS_FS_ALLOWED: bool = false;
-pub static mut FS_ACCESS_WARN: Vec<String> = Vec::new();
 
 #[derive(Debug)]
 pub enum AnswerState {
