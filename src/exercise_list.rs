@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::OsStr, fs};
+use std::{collections::HashMap, ffi::OsStr, fmt::Display, fs, path::PathBuf, sync::mpsc::{Receiver, Sender}, thread};
 
 use egui::{Button, CentralPanel, Context, Label, Modal, RichText, ScrollArea, Vec2};
 use mlua::{Function, Lua, LuaOptions, ObjectLike, StdLib};
@@ -12,7 +12,7 @@ pub fn text (text: impl Into<String>, font_size: f32) -> RichText {
 /// returns true if the config should be updated
 pub fn display_list(ctx: &Context, selected_now: &mut HashMap<String, usize>, exercise_files: &mut Vec<UnloadedExerciseData>,
     exercises: &mut Vec<ExerciseData>, new_exercise_modal_open: &mut bool, exercise_download_modal: &mut ExerciseDownloadModal,
-    create_exercise_data: &mut Option<CreateExerciseData>) -> bool {
+    create_exercise_data: &mut Option<CreateExerciseData>) -> DisplayListResponse {
     let mut update_config = false;
     CentralPanel::default().show(ctx, |ui| {
         let mut exercises_count = 0;
@@ -67,6 +67,7 @@ pub fn display_list(ctx: &Context, selected_now: &mut HashMap<String, usize>, ex
 
             let exercise_text = format!("Составить вариант{}", exercises_count_string(exercises_count));
             if ui.add_sized(Vec2::new(width - offset / 2.0, 50.0), Button::new(text(exercise_text, 22.0))).clicked() {
+                let _ = fs::remove_dir(get_test_path());
                 for exercise_file in &mut *exercise_files {
                     let count = 
                         match selected_now.get(&exercise_file.name) {
@@ -138,9 +139,12 @@ pub fn display_list(ctx: &Context, selected_now: &mut HashMap<String, usize>, ex
         if response.clicked() {
             exercise_download_modal.is_open = false;
         }
-        return update_config
+        if update_config {
+            return DisplayListResponse::UpdateConfig
+        }
     }
     if *new_exercise_modal_open {
+        let mut current_response: Option<DisplayListResponse> = None;
         let response = Modal::new("Open file modal".into()).show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 ui.set_width(400.0);
@@ -154,37 +158,37 @@ pub fn display_list(ctx: &Context, selected_now: &mut HashMap<String, usize>, ex
                 let new_button = Button::new(text("Создать генератор", 24.0));
                 let close_button = Button::new(text("Отмена", 24.0));
                 if ui.add_sized(size, from_file_button).clicked() {
-                    pick_and_load_exercise(exercise_files);
+                    //pick_and_load_exercise(exercise_files);
                     *new_exercise_modal_open = false;
                     update_config = true;
+                    current_response = Some(DisplayListResponse::LoadExercise);
                 }
                 if ui.add_sized(size, download_button).clicked() {
                     exercise_download_modal.is_open = true;
-                    return
                 }
                 if ui.add_sized(size, new_button).clicked() {
-                    let path = rfd::FileDialog::new()
-                        .set_file_name("exercise.lua").save_file();
-                    if let Some(path) = path {
-                        let path = path.with_extension("lua");
-                        *create_exercise_data =
-                            crate::create_exercise::create_file(path.to_str().unwrap());
-                    }
+                    current_response = Some(DisplayListResponse::CreateExercise)
                 }
                 if ui.add_sized(size, close_button).clicked() {
                     *new_exercise_modal_open = false;
                 }
             })
         }).backdrop_response;
+        if let Some(response) = current_response {
+            return response
+        }
         if response.clicked() {
             *new_exercise_modal_open = false;
         }
     }
-    update_config
+    if update_config {
+        return DisplayListResponse::UpdateConfig
+    } else {
+        return DisplayListResponse::None
+    }
 }
 
-fn pick_and_load_exercise(exercise_files: &mut Vec<UnloadedExerciseData>) {
-    let exercise_path = rfd::FileDialog::new().pick_file();
+pub fn load_picked_exercise(exercise_files: &mut Vec<UnloadedExerciseData>, exercise_path: Option<PathBuf>) {
     if let Some(exercise_path) = exercise_path {
         let file_extension = exercise_path.extension();
         // continue only if the extension of the file is .lua
@@ -233,4 +237,21 @@ fn pick_and_load_exercise(exercise_files: &mut Vec<UnloadedExerciseData>) {
             },
         }
     }
+}
+
+fn get_test_path() -> PathBuf {
+    let home_dir = dirs::home_dir().expect("Failed to get home dir");
+    home_dir.join("Test")
+}
+
+pub enum DisplayListResponse {
+    CreateExercise,
+    LoadExercise,
+    UpdateConfig,
+    None
+}
+
+pub enum RfdDataType {
+    CreateExercise,
+    LoadExercise,
 }

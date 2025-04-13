@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf, sync::mpsc::{self, Receiver, Sender}, thread};
 
 use config::{load_config, save_config, AppConfig};
 use create_exercise::CreateExerciseData;
@@ -6,6 +6,7 @@ use eframe::App;
 use egui::{Button, CentralPanel, RichText, ScrollArea, Style, Vec2, Visuals};
 use exercise::{display_exercise, exercises_count_string, ExerciseData};
 use exercise_download::ExerciseDownloadModal;
+use exercise_list::RfdDataType;
 
 mod exercise;
 mod exercise_list;
@@ -42,11 +43,14 @@ struct TestBuilderApp {
     exercise_download_modal: ExerciseDownloadModal,
     create_exercise_data: Option<CreateExerciseData>,
     new_exercise_modal_open: bool,
+    rfd_sender: Sender<(RfdDataType, Option<PathBuf>)>,
+    rfd_receiver: Receiver<(RfdDataType, Option<PathBuf>)>,
 }
 
 impl TestBuilderApp {
     fn new() -> TestBuilderApp {
         let config = load_config();
+        let (rfd_sender, rfd_receiver) = mpsc::channel();
         TestBuilderApp {
             exercises: Vec::new(),
             exercises_choice: HashMap::new(),
@@ -54,6 +58,8 @@ impl TestBuilderApp {
             exercise_download_modal: ExerciseDownloadModal::default(),
             create_exercise_data: None,
             new_exercise_modal_open: false,
+            rfd_sender,
+            rfd_receiver,
         }
     }
 }
@@ -67,7 +73,7 @@ impl App for TestBuilderApp {
                 }
                 return
             }
-            if exercise_list::display_list(
+            match exercise_list::display_list(
                 ctx,
                 &mut self.exercises_choice,
                 &mut self.config.unloaded_exercises,
@@ -76,7 +82,39 @@ impl App for TestBuilderApp {
                 &mut self.exercise_download_modal,
                 &mut self.create_exercise_data,
             ) {
-                save_config(&self.config);
+                exercise_list::DisplayListResponse::CreateExercise => {
+                    let sender = self.rfd_sender.clone();
+                    thread::spawn(move || {
+                        let path = rfd::FileDialog::new()
+                            .set_file_name("exercise.lua").save_file();
+                        sender.send((RfdDataType::CreateExercise, path)).unwrap();
+                    });
+                },
+                exercise_list::DisplayListResponse::LoadExercise => {
+                    let sender = self.rfd_sender.clone();
+                    thread::spawn(move || {
+                        let path = rfd::FileDialog::new()
+                            .pick_file();
+                        sender.send((RfdDataType::LoadExercise, path)).unwrap();
+                    });
+                },
+                exercise_list::DisplayListResponse::UpdateConfig => save_config(&self.config),
+                exercise_list::DisplayListResponse::None => (),
+            }
+
+            if let Ok((data_type, path)) = self.rfd_receiver.try_recv() {
+                match data_type {
+                    RfdDataType::CreateExercise => {
+                        if let Some(path) = path {
+                            let path = path.with_extension("lua");
+                            self.create_exercise_data =
+                                crate::create_exercise::create_file(path.to_str().unwrap());
+                        }
+                    },
+                    RfdDataType::LoadExercise => {
+                        exercise_list::load_picked_exercise(&mut self.config.unloaded_exercises, path);
+                    },
+                }
             }
             return
         }
