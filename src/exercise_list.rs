@@ -67,7 +67,7 @@ pub fn display_list(ctx: &Context, selected_now: &mut HashMap<String, usize>, ex
 
             let exercise_text = format!("Составить вариант{}", exercises_count_string(exercises_count));
             if ui.add_sized(Vec2::new(width - offset / 2.0, 50.0), Button::new(text(exercise_text, 22.0))).clicked() {
-                let _ = fs::remove_dir(get_test_path());
+                fs::remove_dir_all(get_test_path());
                 for exercise_file in &mut *exercise_files {
                     let count = 
                         match selected_now.get(&exercise_file.name) {
