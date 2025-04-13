@@ -22,7 +22,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "My egui App",
+        "Генератор учебных заданий",
         options,
         Box::new(|cc| {
             cc.egui_ctx.set_style(Style {
